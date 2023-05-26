@@ -27,6 +27,9 @@ class FlickBracketCommand(sublime_plugin.TextCommand):
         if vw.classify(carretpt) & sublime.CLASS_LINE_END:
             next(linergns)
 
-        nonconmma = itools.dropwhile(lambda rgn: vw.substr(rgn).rstrip().endswith(","), 
-                                     linergns)
+        flickers = ("(", "[", "{", "<", ",")
+        nonconmma = itools.dropwhile(
+                        lambda rgn: vw.substr(rgn).rstrip().endswith(flickers),
+                        linergns)
+
         vw.insert(edit, next(nonconmma, carretrgn).end(), char)
