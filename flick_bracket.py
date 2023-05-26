@@ -9,14 +9,24 @@ class FlickBracketCommand(sublime_plugin.TextCommand):
     def run(self, edit):
 
         vw = self.view
-        carretpt = vw.sel()[0].b
+        carretrgn = vw.sel()[0]
+        carretpt = carretrgn.end()
         char = vw.substr(carretpt)
 
-        if char in ")]}>":
-            rng = range(carretpt + 1, carretpt + 99)
-            sp = itools.dropwhile(lambda pt: vw.substr(pt).isspace(), rng)
-            rgn = sublime.Region(carretpt, next(sp))
-            # print(rgn)
-            vw.erase(edit, rgn)
-            vw.insert(edit, vw.line(carretpt).end(), char)
-            # (lll))))>
+        if char not in ")]}>":
+            return
+
+        rng = range(carretpt + 1, carretpt + 99)
+        nonsp = itools.dropwhile(lambda pt: vw.substr(pt) in " \t", rng)
+        pnt = next(nonsp, -1)
+        if pnt == -1:
+            return
+        vw.erase(edit, sublime.Region(carretpt, pnt))
+
+        linergns = iter(vw.lines(sublime.Region(carretpt, carretpt + 999)))
+        if vw.classify(carretpt) & sublime.CLASS_LINE_END:
+            next(linergns)
+
+        nonconmma = itools.dropwhile(lambda rgn: vw.substr(rgn).rstrip().endswith(","), 
+                                     linergns)
+        vw.insert(edit, next(nonconmma, carretrgn).end(), char)
