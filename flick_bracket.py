@@ -9,22 +9,27 @@ class FlickBracketCommand(sublime_plugin.TextCommand):
     def run(self, edit):
 
         vw = self.view
-        carretrgn = vw.sel()[0]
-        carretpt = carretrgn.end()
-        char = vw.substr(carretpt)
+        caretrgn = vw.sel()[0]
+        caretpt = caretrgn.end()
+        lineend = vw.line(caretpt).end()
 
-        if char not in ")]}>":
+        itrng = iter(range(caretpt, lineend + 1))
+        preds = [lambda pt: vw.substr(pt) not in ")]}>",
+                 lambda pt: vw.substr(pt) in ")]}>",
+                 lambda pt: vw.substr(pt) in " \t"]
+
+        drops = map(itools.dropwhile, preds, [itrng] * 3)
+        bracket, bracketend, erasept = list(map(next, drops, [lineend] * 3))
+
+        if bracket == lineend:
             return
 
-        rng = range(carretpt + 1, carretpt + 99)
-        nonsp = itools.dropwhile(lambda pt: vw.substr(pt) in " \t", rng)
-        pnt = next(nonsp, -1)
-        if pnt == -1:
-            return
-        vw.erase(edit, sublime.Region(carretpt, pnt))
+        movestr = vw.substr(sublime.Region(caretpt, bracketend))
 
-        linergns = iter(vw.lines(sublime.Region(carretpt, carretpt + 999)))
-        if vw.classify(carretpt) & sublime.CLASS_LINE_END:
+        vw.erase(edit, sublime.Region(caretpt, erasept))
+
+        linergns = iter(vw.lines(sublime.Region(caretpt, caretpt + 1500)))
+        if vw.classify(caretpt) & sublime.CLASS_LINE_END:
             next(linergns)
 
         flickers = ("(", "[", "{", "<", ",")
@@ -32,4 +37,4 @@ class FlickBracketCommand(sublime_plugin.TextCommand):
                         lambda rgn: vw.substr(rgn).rstrip().endswith(flickers),
                         linergns)
 
-        vw.insert(edit, next(nonconmma, carretrgn).end(), char)
+        vw.insert(edit, next(nonconmma, caretrgn).end(), movestr)
