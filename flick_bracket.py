@@ -15,17 +15,18 @@ class FlickBracketCommand(sublime_plugin.TextCommand):
 
         itrng = iter(range(caretpt, lineend + 1))
         preds = [lambda pt: vw.substr(pt) not in ")]}>",
-                 lambda pt: vw.substr(pt) in ")]}>",
-                 lambda pt: vw.substr(pt) in " \t"]
+                 lambda pt: vw.substr(pt) in ")]}>"]
 
-        drops = map(itools.dropwhile, preds, [itrng] * 3)
-        bracket, bracketend, erasept = list(map(next, drops, [lineend] * 3))
+        drops = map(itools.dropwhile, preds, [itrng] * 2)
+        bracket, bracketend = list(map(next, drops, [lineend] * 2))
 
         if bracket == lineend:
             return
 
         movestr = vw.substr(sublime.Region(caretpt, bracketend))
 
+        rng = range(bracketend, lineend)
+        erasept = next(itools.dropwhile(lambda pt: vw.substr(pt).isspace(), rng))
         vw.erase(edit, sublime.Region(caretpt, erasept))
 
         linergns = iter(vw.lines(sublime.Region(caretpt, caretpt + 1500)))
