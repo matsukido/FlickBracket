@@ -26,7 +26,9 @@ class FlickBracketCommand(sublime_plugin.TextCommand):
         movestr = vw.substr(sublime.Region(caretpt, bracketend))
 
         rng = range(bracketend, lineend)
-        erasept = next(itools.dropwhile(lambda pt: vw.substr(pt).isspace(), rng))
+        erasept = next(itools.dropwhile(lambda pt: vw.substr(pt).isspace(), rng), None)
+        if erasept is None:
+            return
         vw.erase(edit, sublime.Region(caretpt, erasept))
 
         linergns = iter(vw.lines(sublime.Region(caretpt, caretpt + 1500)))
@@ -38,4 +40,12 @@ class FlickBracketCommand(sublime_plugin.TextCommand):
                         lambda rgn: vw.substr(rgn).rstrip().endswith(flickers),
                         linergns)
 
-        vw.insert(edit, next(nonconmma, caretrgn).end(), movestr)
+        pt = next(nonconmma, caretrgn).end()
+        rgn = vw.line(pt)
+        txt = vw.substr(rgn)
+        stripped = txt.rstrip()
+
+        if stripped.endswith((";", ":")):
+            pt -= (len(txt) - len(stripped) + 1)
+
+        vw.insert(edit, pt, movestr)
